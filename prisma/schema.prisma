@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,14 +5,119 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
+  id             Int           @id @default(autoincrement())
+  name           String?
+  lastname       String?
+  email          String        @unique
+  password       String
+  magazaName     String
+  token          String?       @unique
+  emailVerified  Boolean       @default(false)
+  phone          String?       @unique
+  identityNumber String?       @unique
+  createdAt      DateTime      @default(now())
+  role           Role          @default(USER)
+  oAuthToken     String?       @unique
+  config         Json?
+  products       Product[]
+  musteriler     Musteri[]
+  orders         Order[]
+  userEntegreler UserEntegre[]
+}
+
+model Product {
+  id             Int       @id @default(autoincrement())
+  name           String
+  altname        String?
+  faturaName     String?
+  category       String?
+  urunKodu       String?   @unique
+  stokKodu       String?
+  barkod         String?
+  satisFiyati    Float?
+  listeFiyati    Float?
+  alisFiyati     Float?
+  kdv            Float?
+  hazirlikSuresi Float?
+  stock          Int?
+  content        String?
+  tags           String[]
+  salesOpen      Boolean?
+  images         Json?
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @updatedAt
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId         Int?
+}
+
+model Musteri {
+  id         Int       @id @default(autoincrement())
+  adsoyad    String?
+  adres      String?
+  sehir      String?
+  ilce       String?
+  postakodu  String?
+  email      String?
+  tckimlik   String?
+  vergino    String?
+  vergidaire String?
+  firma      String?
+  tipi       String?
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     Int?
+}
+
+model Order {
+  id             Int           @id @default(autoincrement())
+  orderId        String        @unique
+  products       Json          @default("[]")
+  entegreKanal   EntegreKanal? @relation(fields: [entegreKanalId], references: [id], onDelete: SetNull)
+  entegreKanalId Int?
+  siparisStatus  String?
+  faturaStatus   String?
+  kargoStatus    String?
+  not            String?
+  faturaAdresi   Json?         @default("{}")
+  siparisAdresi  Json?         @default("{}")
+  kargoJSON      Json?
+  tarih          DateTime      @default(now())
+  gelirGoster    Boolean       @default(false)
+  internetSatisi Boolean       @default(false)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId         Int?
+}
+
+model EntegreKanal {
+  id             Int           @id @default(autoincrement())
+  name           String        @unique
+  slug           String        @unique
+  category       String?
+  isActive       Boolean       @default(true)
+  orders         Order[]
+  userEntegreler UserEntegre[]
+}
+
+model UserEntegre {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entegreKanalId Int
+  entegreKanal   EntegreKanal @relation(fields: [entegreKanalId], references: [id], onDelete: Cascade)
+  status         Boolean      @default(false)
+  urunSync       Boolean      @default(false)
+  stockSync      Boolean      @default(false)
+  subscribed_at  DateTime?
+  expires_at     DateTime?
+  apiData        String?
+  apiSettings    Json?
+  createdAt      DateTime?    @default(now())
+  updatedAt      DateTime?    @updatedAt
 }
 
 enum Role {
