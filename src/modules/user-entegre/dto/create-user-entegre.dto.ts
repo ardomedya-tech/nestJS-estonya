@@ -52,6 +52,14 @@ export class CreateUserEntegreDto {
   stockSync?: boolean;
 
   @IsOptional()
+  @Transform(({ value, obj, key }) => {
+    const rawValue = obj?.[key as string];
+    return parseBooleanFromRaw(rawValue ?? value);
+  })
+  @IsBoolean()
+  soruCevapSync?: boolean;
+
+  @IsOptional()
   @IsDateString()
   subscribed_at?: string;
 

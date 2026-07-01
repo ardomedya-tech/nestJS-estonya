@@ -9,118 +9,187 @@ datasource db {
 }
 
 model User {
-  id             Int           @id @default(autoincrement())
-  name           String?
-  lastname       String?
-  email          String        @unique
-  password       String
-  magazaName     String
-  token          String?       @unique
-  emailVerified  Boolean       @default(false)
-  phone          String?       @unique
-  identityNumber String?       @unique
-  createdAt      DateTime      @default(now())
-  role           Role          @default(USER)
-  oAuthToken     String?       @unique
+  id             Int            @id(map: "PK_9862f679340fb2388436a5ab3e4") @default(autoincrement())
+  name           String?        @db.VarChar
+  lastname       String?        @db.VarChar
+  email          String         @unique(map: "UQ_4a257d2c9837248d70640b3e36e") @db.VarChar
+  password       String         @db.VarChar
+  magazaName     String         @db.VarChar
+  token          String?        @unique(map: "UQ_0b1b63f98ca5f2921157bf42bc9") @db.VarChar
+  emailVerified  Boolean        @default(false)
+  phone          String?        @db.VarChar
+  identityNumber String?        @unique(map: "UQ_001c7ba2ac15c6718fac04e7f50") @db.VarChar
+  createdAt      DateTime       @default(now()) @db.Timestamp(6)
+  role           User_role_enum @default(USER)
   config         Json?
-  products       Product[]
+  oAuthToken     String?        @unique(map: "UQ_5cbce987e7a465116e18a21174e") @db.VarChar
+  firmaBilgileri String[]       @default([])
   musteriler     Musteri[]
   orders         Order[]
+  products       Product[]
   userEntegreler UserEntegre[]
 }
 
 model Product {
-  id             Int       @id @default(autoincrement())
-  name           String
-  altname        String?
-  faturaName     String?
-  category       String?
-  urunKodu       String?   @unique
-  stokKodu       String?
-  barkod         String?
-  satisFiyati    Float?
-  listeFiyati    Float?
-  alisFiyati     Float?
-  kdv            Float?
-  hazirlikSuresi Float?
-  stock          Int?
-  content        String?
-  tags           String[]
-  salesOpen      Boolean?
-  images         Json?
-  createdAt      DateTime? @default(now())
-  updatedAt      DateTime? @updatedAt
-  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId         Int?
+  id               Int                @id(map: "PK_9fc040db7872192bbc26c515710") @default(autoincrement())
+  name             String             @db.VarChar
+  altname          String?            @db.VarChar
+  faturaName       String?            @db.VarChar
+  barkod           String?            @db.VarChar
+  satisFiyati      Float?
+  listeFiyati      Float?
+  alisFiyati       Float?
+  kdv              Float?
+  stock            Int?
+  content          String?
+  images           Json?
+  createdAt        DateTime?          @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
+  userId           Int?
+  category         String?            @db.VarChar
+  urunKodu         String?            @unique(map: "UQ_a9f2c0fdf7981880b62ff1dc4c1") @db.VarChar
+  stokKodu         String?            @db.VarChar
+  tags             String[]
+  hazirlikSuresi   Float?
+  salesOpen        Boolean?
+  PazaryeriProduct PazaryeriProduct[]
+  user             User?              @relation(fields: [userId], references: [id], onUpdate: NoAction, map: "FK_de75905c3b4987f4b5bb1472644")
 }
 
 model Musteri {
-  id         Int       @id @default(autoincrement())
-  adsoyad    String?
-  adres      String?
-  sehir      String?
-  ilce       String?
-  postakodu  String?
-  email      String?
-  tckimlik   String?
-  vergino    String?
-  vergidaire String?
-  firma      String?
-  tipi       String?
-  createdAt  DateTime? @default(now())
-  updatedAt  DateTime? @updatedAt
-  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id         Int       @id(map: "PK_a19dbe09dc034e27788158d03d5") @default(autoincrement())
+  adsoyad    String?   @db.VarChar
+  adres      String?   @db.VarChar
+  sehir      String?   @db.VarChar
+  ilce       String?   @db.VarChar
+  postakodu  String?   @db.VarChar
+  email      String?   @db.VarChar
+  tckimlik   String?   @db.VarChar
+  vergino    String?   @db.VarChar
+  vergidaire String?   @db.VarChar
+  createdAt  DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime? @default(now()) @updatedAt @db.Timestamp(6)
   userId     Int?
+  firma      String?   @db.VarChar
+  tipi       String?   @db.VarChar
+  user       User?     @relation(fields: [userId], references: [id], onUpdate: NoAction, map: "FK_31adaa176007266f978df4fef34")
 }
 
 model Order {
-  id             Int           @id @default(autoincrement())
-  orderId        String        @unique
-  products       Json          @default("[]")
-  entegreKanal   EntegreKanal? @relation(fields: [entegreKanalId], references: [id], onDelete: SetNull)
-  entegreKanalId Int?
-  siparisStatus  String?
-  faturaStatus   String?
-  kargoStatus    String?
+  id             Int           @id(map: "PK_3d5a3861d8f9a6db372b2b317b7") @default(autoincrement())
   not            String?
-  faturaAdresi   Json?         @default("{}")
-  siparisAdresi  Json?         @default("{}")
-  kargoJSON      Json?
-  tarih          DateTime      @default(now())
   gelirGoster    Boolean       @default(false)
   internetSatisi Boolean       @default(false)
-  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId         Int?
+  siparisStatus  String?       @db.VarChar
+  faturaStatus   String?       @db.VarChar
+  kargoStatus    String?       @db.VarChar
+  products       Json          @default("[]")
+  tarih          DateTime      @default(now()) @db.Timestamp(6)
+  faturaAdresi   Json?         @default("{}")
+  siparisAdresi  Json?         @default("{}")
+  entegreKanalId Int?
+  orderId        String        @unique(map: "UQ_79772f727dd72ada229f6f8f286") @db.VarChar
+  kargoJSON      Json?
+  entegreKanal   EntegreKanal? @relation(fields: [entegreKanalId], references: [id], onUpdate: NoAction, map: "FK_2b9bb3d390bcf493053fd49cbd6")
+  user           User?         @relation(fields: [userId], references: [id], onUpdate: NoAction, map: "FK_cdc25a0a42e8f451020a26680b3")
 }
 
 model EntegreKanal {
-  id             Int           @id @default(autoincrement())
-  name           String        @unique
-  slug           String        @unique
-  category       String?
-  isActive       Boolean       @default(true)
-  orders         Order[]
-  userEntegreler UserEntegre[]
+  id               Int                @id(map: "PK_90fc8b580e52e5062ded376c4af") @default(autoincrement())
+  name             String             @unique(map: "UQ_e5bbd22dbc5e0cade47013bb7ed") @db.VarChar
+  slug             String             @unique(map: "UQ_8f4a328afc90e0a02d384664758") @db.VarChar
+  category         String?            @db.VarChar
+  isActive         Boolean            @default(true)
+  orders           Order[]
+  PazaryeriProduct PazaryeriProduct[]
+  userEntegreler   UserEntegre[]
 }
 
 model UserEntegre {
-  id             Int          @id @default(autoincrement())
+  id             Int           @id(map: "PK_3797297e8229be84cca2ee5fdae") @default(autoincrement())
   userId         Int
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   entegreKanalId Int
-  entegreKanal   EntegreKanal @relation(fields: [entegreKanalId], references: [id], onDelete: Cascade)
-  status         Boolean      @default(false)
-  urunSync       Boolean      @default(false)
-  stockSync      Boolean      @default(false)
-  subscribed_at  DateTime?
-  expires_at     DateTime?
-  apiData        String?
+  status         Boolean       @default(false)
+  urunSync       Boolean       @default(false)
+  stockSync      Boolean       @default(false)
+  subscribed_at  DateTime?     @db.Timestamp(6)
+  expires_at     DateTime?     @db.Timestamp(6)
+  createdAt      DateTime?     @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime?     @default(now()) @updatedAt @db.Timestamp(6)
   apiSettings    Json?
-  createdAt      DateTime?    @default(now())
-  updatedAt      DateTime?    @updatedAt
+  apiData        String?
+  soruCevapSync  Boolean       @default(false)
+  GecmisCevap    GecmisCevap[]
+  Soru           Soru[]
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_4947fba2ae6505c1ed8e52624ab")
+  entegreKanal   EntegreKanal  @relation(fields: [entegreKanalId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_c08ed88bf76cd56a68557c09636")
 }
 
-enum Role {
+model GecmisCevap {
+  id             Int         @id(map: "PK_0b17b219eb8712f5b1c4892e81f") @default(autoincrement())
+  platform       String      @db.VarChar
+  soru           String
+  cevap          String
+  kategori       String?     @db.VarChar
+  kullanimSayisi Int         @default(0)
+  olusturulma    DateTime?   @default(now()) @db.Timestamp(6)
+  guncelleme     DateTime?   @default(now()) @db.Timestamp(6)
+  userEntegreId  Int
+  UserEntegre    UserEntegre @relation(fields: [userEntegreId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_0cd1974e19cbd02dbc9411a2eb0")
+}
+
+model GonderilenCevap {
+  id              Int       @id(map: "PK_4ec54cc6da73e0a9fa6f779d849") @default(autoincrement())
+  platform        String    @db.VarChar
+  cevap           String
+  otomatikMi      Boolean   @default(false)
+  platformYaniti  Json?
+  basariliMi      Boolean   @default(false)
+  gonderilenZaman DateTime? @default(now()) @db.Timestamp(6)
+  guncelleme      DateTime? @default(now()) @db.Timestamp(6)
+  soruId          Int
+  Soru            Soru      @relation(fields: [soruId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_067d8642d77d77d25d00f2c1968")
+}
+
+model Soru {
+  id               Int               @id(map: "PK_b14338e9fba37763e18ab2fcd7b") @default(autoincrement())
+  platform         String            @db.VarChar
+  platformSoruId   String?           @unique(map: "UQ_12a1ec83a13d6f7354037d55b5d") @db.VarChar
+  soru             String
+  urunAdi          String?           @db.VarChar
+  musteriAdi       String?           @db.VarChar
+  aiCevap          String?
+  guvenSkor        Float?
+  kategori         String?           @db.VarChar
+  durum            String            @default("bekliyor") @db.VarChar
+  duzenlenmisCevap String?
+  olusturulma      DateTime?         @default(now()) @db.Timestamp(6)
+  guncelleme       DateTime?         @default(now()) @db.Timestamp(6)
+  userEntegreId    Int
+  GonderilenCevap  GonderilenCevap[]
+  UserEntegre      UserEntegre       @relation(fields: [userEntegreId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_3a7e59f3210002c8dfb1e3016ef")
+}
+
+model PazaryeriProduct {
+  id                 Int           @id(map: "PK_94c29a602d384f2a8c456019ea1") @default(autoincrement())
+  productId          Int
+  pazaryeriName      String        @db.VarChar
+  pazaryeriProductId String?       @db.VarChar
+  pazaryeriSku       String?       @db.VarChar
+  pazaryeriBarcode   String?       @db.VarChar
+  lastPrice          Float?
+  lastStock          Int?
+  createdAt          DateTime?     @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime?     @default(now()) @db.Timestamp(6)
+  entegreKanalId     Int?
+  EntegreKanal       EntegreKanal? @relation(fields: [entegreKanalId], references: [id], onUpdate: NoAction, map: "FK_599c3c2e5f519d88b0923a48b98")
+  Product            Product       @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_a9e8a58587f404aa896b1a93eea")
+
+  @@unique([productId, entegreKanalId], map: "IDX_270d2d239bebbcb322b9dcecbb")
+}
+
+enum User_role_enum {
   ADMIN
   USER
   GUEST

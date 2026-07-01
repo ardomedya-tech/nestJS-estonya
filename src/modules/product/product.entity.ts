@@ -4,10 +4,12 @@ import {
 	Entity,
 	JoinColumn,
 	ManyToOne,
+	OneToMany,
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
+import { PazaryeriProduct } from '../pazaryeri-product/pazaryeri-product.entity';
 
 @Entity('Product')
 export class Product {
@@ -74,6 +76,9 @@ export class Product {
 	@ManyToOne(() => User, (user) => user.products, { nullable: true, onDelete: 'SET NULL' })
 	@JoinColumn({ name: 'userId' })
 	user!: User | null;
+
+	@OneToMany(() => PazaryeriProduct, (pazaryeriProduct) => pazaryeriProduct.product)
+	pazaryeriProducts!: PazaryeriProduct[];
 
 	@Column({ type: 'int', nullable: true })
 	userId!: number | null;

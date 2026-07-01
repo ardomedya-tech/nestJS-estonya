@@ -39,7 +39,7 @@ export class User {
   @Column({ default: false })
   emailVerified!: boolean;
 
-  @Column({ type: 'varchar', nullable: true, unique: true })
+  @Column({ type: 'varchar', nullable: true})
   phone!: string | null;
 
   @Column({ type: 'varchar', nullable: true, unique: true })
@@ -48,14 +48,17 @@ export class User {
   @CreateDateColumn()
   createdAt!: Date;
 
-  @Column({ type: 'enum', enum: Role, default: Role.USER , select: false })
+  @Column({ type: 'enum', enum: Role, default: Role.USER , select: true })
   role!: Role;
 
   @Column({ type: 'varchar', nullable: true, unique: true })
   oAuthToken!: string | null;
 
-  @Column({ type: 'jsonb', nullable: true, select: false })
+  @Column({ type: 'jsonb', nullable: true, select: true })
   config!: Record<string, unknown> | null;
+
+  @Column({ type: 'text', array: true, select: true, nullable: true, default: () => 'ARRAY[]::text[]' })
+  firmaBilgileri!: string[] | null;
 
   @OneToMany(() => Product, (product) => product.user)
   products!: Product[];

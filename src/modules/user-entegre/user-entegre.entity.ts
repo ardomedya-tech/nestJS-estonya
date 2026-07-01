@@ -4,11 +4,14 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { EntegreKanal } from '../entegre-kanal/entegre-kanal.entity';
 import { User } from '../user/user.entity';
+import { Soru } from '../../integrations/soru-cevap/entities/soru.entity';
+import { GecmisCevap } from '../../integrations/soru-cevap/entities/gecmis-cevap.entity';
 
 @Entity('UserEntegre')
 export class UserEntegre {
@@ -38,6 +41,9 @@ export class UserEntegre {
   @Column({ type: 'boolean', default: false })
   stockSync!: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  soruCevapSync!: boolean;
+
   @Column({ type: 'timestamp', nullable: true })
   subscribed_at!: Date | null;
 
@@ -49,6 +55,17 @@ export class UserEntegre {
 
   @Column({ type: 'jsonb', nullable: true })
   apiSettings!: Record<string, unknown> | null;
+
+  // Soru-Cevap ilişkileri
+  @OneToMany(() => Soru, (soru) => soru.userEntegre, {
+    cascade: true,
+  })
+  sorular!: Soru[];
+
+  @OneToMany(() => GecmisCevap, (gecmisCevap) => gecmisCevap.userEntegre, {
+    cascade: true,
+  })
+  gecmisCevaplar!: GecmisCevap[];
 
   @CreateDateColumn({ nullable: true })
   createdAt!: Date | null;
