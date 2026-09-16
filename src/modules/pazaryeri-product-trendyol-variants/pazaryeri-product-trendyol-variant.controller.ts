@@ -16,12 +16,12 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { User } from '../user/user.entity';
 import { CreatePazaryeriProductVariantDto } from './dto/create-pazaryeri-product-variant.dto';
 import { UpdatePazaryeriProductVariantDto } from './dto/update-pazaryeri-product-variant.dto';
-import { PazaryeriProductVariantService } from './pazaryeri-product-variant.service';
+import { PazaryeriProductTrendyolVariantService } from './pazaryeri-product-trendyol-variant.service';
 
 @UseGuards(AuthGuard)
-@Controller('pazaryeri-product-variants')
-export class PazaryeriProductVariantController {
-  constructor(private readonly pazaryeriProductVariantService: PazaryeriProductVariantService) {}
+@Controller('pazaryeri-product-trendyol-variants')
+export class PazaryeriProductTrendyolVariantController {
+  constructor(private readonly pazaryeriProductVariantService: PazaryeriProductTrendyolVariantService) {}
 
   @Get()
   findAll(@Req() request: Request & { user: User }) {

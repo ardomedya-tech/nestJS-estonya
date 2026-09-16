@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { EntegreKanal } from '../entegre-kanal/entegre-kanal.entity';
 import { Product } from '../product/product.entity';
 import { KargoDto } from './dto/kargo.dto';
@@ -166,5 +166,36 @@ export class OrderService {
   async delete(id: number, userId: number) {
     const order = await this.findOne(id, userId);
     return this.orderRepository.remove(order);
+  }
+
+  async bulkDelete(ids: number[], userId: number) {
+    const normalizedIds = Array.from(
+      new Set(ids.filter((id) => Number.isInteger(id) && id > 0)),
+    );
+
+    if (!normalizedIds.length) {
+      throw new BadRequestException('Silinecek siparis bulunamadi');
+    }
+
+    const orders = await this.orderRepository.find({
+      where: {
+        id: In(normalizedIds),
+        userId,
+      },
+    });
+
+    if (!orders.length) {
+      return {
+        deletedCount: 0,
+        requestedCount: normalizedIds.length,
+      };
+    }
+
+    await this.orderRepository.remove(orders);
+
+    return {
+      deletedCount: orders.length,
+      requestedCount: normalizedIds.length,
+    };
   }
 }

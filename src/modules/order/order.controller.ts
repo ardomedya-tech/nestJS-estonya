@@ -14,6 +14,7 @@ import {
 import { Request } from 'express';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { User } from '../user/user.entity';
+import { BulkDeleteOrdersDto } from './dto/bulk-delete-orders.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { KargoDto } from './dto/kargo.dto';
@@ -107,5 +108,20 @@ export class OrderController {
     @Req() request: Request & { user: User },
   ) {
     return this.orderService.delete(id, request.user.id);
+  }
+
+  @Post('bulk-delete')
+  bulkDelete(
+    @Req() request: Request & { user: User },
+    @Body(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    dto: BulkDeleteOrdersDto,
+  ) {
+    return this.orderService.bulkDelete(dto.ids, request.user.id);
   }
 }

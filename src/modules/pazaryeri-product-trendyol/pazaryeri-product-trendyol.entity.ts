@@ -10,24 +10,19 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { EntegreKanal } from '../entegre-kanal/entegre-kanal.entity';
-import { PazaryeriProductVariant } from '../pazaryeri-product-variants/pazaryeri-product-variant.entity';
-import { Product } from '../product/product.entity';
+import { PazaryeriProductTrendyolVariant } from '../pazaryeri-product-trendyol-variants/pazaryeri-product-trendyol-variant.entity';
 
-@Entity('PazaryeriProduct')
+@Entity('PazaryeriProductTrendyol')
 @Index(['productId', 'entegreKanalId'], { unique: true })
-export class PazaryeriProduct {
+export class PazaryeriProductTrendyol {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: 'int' })
-  productId!: number;
+  @Column({ type: 'int', nullable: true })
+  productId!: number | null;
 
-  @ManyToOne(() => Product, (product) => product.pazaryeriProducts, {
-    nullable: false,
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'productId' })
-  product!: Product;
+  @Column({ type: 'int', nullable: true })
+  userId!: number | null;
 
   @Column({ type: 'int', nullable: true })
   entegreKanalId!: number | null;
@@ -54,10 +49,10 @@ export class PazaryeriProduct {
   @Column({ type: 'int', nullable: true })
   lastStock!: number | null;
 
-  @OneToMany(() => PazaryeriProductVariant, (variant) => variant.pazaryeriProduct, {
+  @OneToMany(() => PazaryeriProductTrendyolVariant, (variant) => variant.pazaryeriProduct, {
     cascade: true,
   })
-  variants!: PazaryeriProductVariant[];
+  variants!: PazaryeriProductTrendyolVariant[];
 
   @CreateDateColumn({ nullable: true })
   createdAt!: Date | null;

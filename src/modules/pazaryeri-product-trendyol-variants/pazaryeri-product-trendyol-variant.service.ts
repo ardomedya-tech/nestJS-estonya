@@ -5,23 +5,23 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PazaryeriProduct } from '../pazaryeri-product/pazaryeri-product.entity';
+import { PazaryeriProductTrendyol } from '../pazaryeri-product-trendyol/pazaryeri-product-trendyol.entity';
 import { CreatePazaryeriProductVariantDto } from './dto/create-pazaryeri-product-variant.dto';
 import { UpdatePazaryeriProductVariantDto } from './dto/update-pazaryeri-product-variant.dto';
-import { PazaryeriProductVariant } from './pazaryeri-product-variant.entity';
+import { PazaryeriProductTrendyolVariant } from './pazaryeri-product-trendyol-variant.entity';
 
 @Injectable()
-export class PazaryeriProductVariantService {
+export class PazaryeriProductTrendyolVariantService {
   constructor(
-    @InjectRepository(PazaryeriProductVariant)
-    private readonly pazaryeriProductVariantRepository: Repository<PazaryeriProductVariant>,
-    @InjectRepository(PazaryeriProduct)
-    private readonly pazaryeriProductRepository: Repository<PazaryeriProduct>,
+    @InjectRepository(PazaryeriProductTrendyolVariant)
+    private readonly pazaryeriProductVariantRepository: Repository<PazaryeriProductTrendyolVariant>,
+    @InjectRepository(PazaryeriProductTrendyol)
+    private readonly pazaryeriProductRepository: Repository<PazaryeriProductTrendyol>,
   ) {}
 
   findAll(userId: number) {
     return this.pazaryeriProductVariantRepository.find({
-      where: { pazaryeriProduct: { product: { userId } } },
+      where: { pazaryeriProduct: { userId } },
       relations: { pazaryeriProduct: true },
       order: { id: 'DESC' },
     });
@@ -29,12 +29,12 @@ export class PazaryeriProductVariantService {
 
   async findOne(id: number, userId: number) {
     const entity = await this.pazaryeriProductVariantRepository.findOne({
-      where: { id, pazaryeriProduct: { product: { userId } } },
+      where: { id, pazaryeriProduct: { userId } },
       relations: { pazaryeriProduct: true },
     });
 
     if (!entity) {
-      throw new NotFoundException(`PazaryeriProductVariant with id ${id} not found`);
+      throw new NotFoundException(`PazaryeriProductTrendyolVariant with id ${id} not found`);
     }
 
     return entity;
@@ -42,9 +42,8 @@ export class PazaryeriProductVariantService {
 
   async create(dto: CreatePazaryeriProductVariantDto, userId: number) {
     const pazaryeriProduct = await this.pazaryeriProductRepository.findOne({
-      where: { id: dto.pazaryeriProductId, product: { userId } },
+      where: { id: dto.pazaryeriProductId, userId },
       select: { id: true },
-      relations: { product: true },
     });
 
     if (!pazaryeriProduct) {
@@ -67,9 +66,8 @@ export class PazaryeriProductVariantService {
       dto.pazaryeriProductId !== entity.pazaryeriProductId
     ) {
       const pazaryeriProduct = await this.pazaryeriProductRepository.findOne({
-        where: { id: dto.pazaryeriProductId, product: { userId } },
+        where: { id: dto.pazaryeriProductId, userId },
         select: { id: true },
-        relations: { product: true },
       });
 
       if (!pazaryeriProduct) {

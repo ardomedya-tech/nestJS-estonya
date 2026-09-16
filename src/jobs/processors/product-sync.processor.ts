@@ -3,9 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { TrendyolService } from '../../integrations/trendyol/trendyol.service';
 import { TrendyolCredentials } from '../../integrations/trendyol/dto/trendyol-credentials.dto';
 import { EntegreKanal } from '../../modules/entegre-kanal/entegre-kanal.entity';
-import { PazaryeriProductVariant } from '../../modules/pazaryeri-product-variants/pazaryeri-product-variant.entity';
-import { PazaryeriProduct } from '../../modules/pazaryeri-product/pazaryeri-product.entity';
-import { Product } from '../../modules/product/product.entity';
+import { PazaryeriProductTrendyolVariant } from '../../modules/pazaryeri-product-trendyol-variants/pazaryeri-product-trendyol-variant.entity';
+import { PazaryeriProductTrendyol } from '../../modules/pazaryeri-product-trendyol/pazaryeri-product-trendyol.entity';
 import { UserEntegre } from '../../modules/user-entegre/user-entegre.entity';
 import { decrypt } from '../../utils/encryption.util';
 import { Repository } from 'typeorm';
@@ -53,6 +52,8 @@ interface PazaryeriProductVariantPayload {
 }
 
 interface PazaryeriProductPayload {
+    userId: number;
+    productId: number | null;
 	entegreKanalId: number | null;
 	pazaryeriName: string;
 	pazaryeriProductId: string | null;
@@ -64,7 +65,6 @@ interface PazaryeriProductPayload {
 }
 
 interface MappedMarketplaceProduct {
-	product: Partial<Product> & { name: string };
 	pazaryeriProduct: PazaryeriProductPayload;
 }
 
@@ -75,12 +75,10 @@ export class ProductSyncProcessor {
 	constructor(
 		@InjectRepository(UserEntegre)
 		private readonly userEntegreRepository: Repository<UserEntegre>,
-		@InjectRepository(Product)
-		private readonly productRepository: Repository<Product>,
-		@InjectRepository(PazaryeriProduct)
-		private readonly pazaryeriProductRepository: Repository<PazaryeriProduct>,
-		@InjectRepository(PazaryeriProductVariant)
-		private readonly pazaryeriProductVariantRepository: Repository<PazaryeriProductVariant>,
+		@InjectRepository(PazaryeriProductTrendyol)
+		private readonly pazaryeriProductRepository: Repository<PazaryeriProductTrendyol>,
+		@InjectRepository(PazaryeriProductTrendyolVariant)
+		private readonly pazaryeriProductVariantRepository: Repository<PazaryeriProductTrendyolVariant>,
 		@InjectRepository(EntegreKanal)
 		private readonly entegreKanalRepository: Repository<EntegreKanal>,
 		private readonly trendyolService: TrendyolService,
@@ -145,16 +143,6 @@ export class ProductSyncProcessor {
 			return true;
 		}
 
-		const allExistingCodes = await this.productRepository.find({
-			where: { userId: job.userId },
-			select: { urunKodu: true },
-		});
-		const existingCodeSet = new Set<string>(
-			allExistingCodes
-				.map((row) => this.toText(row.urunKodu)?.toUpperCase())
-				.filter((v): v is string => Boolean(v)),
-		);
-
 		let inserted = 0;
 		let updated = 0;
 		let skipped = 0;
@@ -170,6 +158,7 @@ export class ProductSyncProcessor {
 				mapped.pazaryeriProduct;
 		
 			const existingPazaryeriProduct = await this.findExistingTrendyolPazaryeriProduct(
+				job.userId,
 				entegreKanal.id,
 				mapped.pazaryeriProduct.pazaryeriProductId,
 				mapped.pazaryeriProduct.pazaryeriBarcode,
@@ -177,29 +166,9 @@ export class ProductSyncProcessor {
 			);
 	
 			if (existingPazaryeriProduct) {
-				const existingProduct = await this.productRepository.findOne({
-					where: { id: existingPazaryeriProduct.productId },
-				});
-
-				if (!existingProduct) {
-					skipped += 1;
-					continue;
-				}
-
-				existingProduct.name = existingProduct.name ?? mapped.product.name;
-				existingProduct.stock = existingProduct.stock ?? mapped.product.stock ?? null;
-				existingProduct.satisFiyati = existingProduct.satisFiyati ?? mapped.product.satisFiyati ?? null;
-				existingProduct.listeFiyati = existingProduct.listeFiyati ?? mapped.product.listeFiyati ?? null;
-				if (!existingProduct.content && mapped.product.content) {
-					existingProduct.content = mapped.product.content;
-				}
-				if ((!existingProduct.images || existingProduct.images.length === 0) && mapped.product.images) {
-					existingProduct.images = mapped.product.images;
-				}
-				await this.productRepository.save(existingProduct);
-
 				Object.assign(existingPazaryeriProduct, mappedPazaryeriProductData);
-				existingPazaryeriProduct.productId = existingProduct.id;
+				existingPazaryeriProduct.userId = job.userId;
+				existingPazaryeriProduct.productId = existingPazaryeriProduct.productId ?? null;
 				const savedPazaryeriProduct = await this.pazaryeriProductRepository.save(
 					existingPazaryeriProduct,
 				);
@@ -212,23 +181,9 @@ export class ProductSyncProcessor {
 				continue;
 			}
 
-			if (!mapped.product.urunKodu) {
-				const baseCode = this.generateProductCode(mapped.product.name ?? '');
-				const uniqueCode = this.ensureUniqueProductCode(baseCode, existingCodeSet);
-				if (uniqueCode) {
-					existingCodeSet.add(uniqueCode.toUpperCase());
-					mapped.product.urunKodu = uniqueCode;
-				}
-			}
-
-			const createdProduct = await this.productRepository.save(
-				this.productRepository.create(mapped.product),
-			);
-
 			const createdPazaryeriProduct = await this.pazaryeriProductRepository.save(
 				this.pazaryeriProductRepository.create({
 					...mappedPazaryeriProductData,
-					productId: createdProduct.id,
 				}),
 			);
 
@@ -347,21 +302,9 @@ export class ProductSyncProcessor {
 
 
 		return {
-			product: {
-				name,
-				content: this.toText(item.description) ?? null,
-				barkod: barkod ?? null,
-				stokKodu: stokKodu ?? null,
-				urunKodu: null,
-				satisFiyati: satisFiyati ?? null,
-				listeFiyati: listeFiyati ?? null,
-				stock: stock ?? null,
-				kdv: kdv ?? null,
-				salesOpen,
-				images: images.length ? images : null,
-				userId,
-			},
 			pazaryeriProduct: {
+				userId,
+				productId: null,
 				entegreKanalId: entegreKanal.id,
 				pazaryeriName: name,
 				pazaryeriProductId,
@@ -404,21 +347,22 @@ export class ProductSyncProcessor {
 	}
 
 	private async findExistingTrendyolPazaryeriProduct(
+		userId: number,
 		entegreKanalId: number,
 		pazaryeriProductId: string | null,
 		pazaryeriBarcode: string | null,
 		pazaryeriSku: string | null,
-	): Promise<PazaryeriProduct | null> {
+	): Promise<PazaryeriProductTrendyol | null> {
 		const where: Array<Record<string, unknown>> = [];
 
 		if (pazaryeriProductId) {
-			where.push({ entegreKanalId, pazaryeriProductId });
+			where.push({ userId, entegreKanalId, pazaryeriProductId });
 		}
 		if (pazaryeriBarcode) {
-			where.push({ entegreKanalId, pazaryeriBarcode });
+			where.push({ userId, entegreKanalId, pazaryeriBarcode });
 		}
 		if (pazaryeriSku) {
-			where.push({ entegreKanalId, pazaryeriSku });
+			where.push({ userId, entegreKanalId, pazaryeriSku });
 		}
 
 		if (!where.length) {
@@ -442,6 +386,7 @@ export class ProductSyncProcessor {
 			variants.map((variant) =>
 				this.pazaryeriProductVariantRepository.create({
 					pazaryeriProductId,
+					pazaryeriProduct: { id: pazaryeriProductId } as PazaryeriProductTrendyol,
 					...variant,
 				}),
 			),

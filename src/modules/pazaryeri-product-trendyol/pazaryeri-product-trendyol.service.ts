@@ -13,22 +13,19 @@ import {
 import { decrypt } from '../../utils/encryption.util';
 import { IsNull, Repository } from 'typeorm';
 import { EntegreKanal } from '../entegre-kanal/entegre-kanal.entity';
-import { PazaryeriProductVariant } from '../pazaryeri-product-variants/pazaryeri-product-variant.entity';
-import { Product } from '../product/product.entity';
+import { PazaryeriProductTrendyolVariant } from '../pazaryeri-product-trendyol-variants/pazaryeri-product-trendyol-variant.entity';
 import { UserEntegre } from '../user-entegre/user-entegre.entity';
 import { CreatePazaryeriProductDto } from './dto/create-pazaryeri-product.dto';
 import { UpdatePazaryeriProductDto } from './dto/update-pazaryeri-product.dto';
-import { PazaryeriProduct } from './pazaryeri-product.entity';
+import { PazaryeriProductTrendyol } from './pazaryeri-product-trendyol.entity';
 
 @Injectable()
-export class PazaryeriProductService {
+export class PazaryeriProductTrendyolService {
   constructor(
-    @InjectRepository(PazaryeriProduct)
-    private readonly pazaryeriProductRepository: Repository<PazaryeriProduct>,
-    @InjectRepository(PazaryeriProductVariant)
-    private readonly pazaryeriProductVariantRepository: Repository<PazaryeriProductVariant>,
-    @InjectRepository(Product)
-    private readonly productRepository: Repository<Product>,
+    @InjectRepository(PazaryeriProductTrendyol)
+    private readonly pazaryeriProductRepository: Repository<PazaryeriProductTrendyol>,
+    @InjectRepository(PazaryeriProductTrendyolVariant)
+    private readonly pazaryeriProductVariantRepository: Repository<PazaryeriProductTrendyolVariant>,
     @InjectRepository(UserEntegre)
     private readonly userEntegreRepository: Repository<UserEntegre>,
     @InjectRepository(EntegreKanal)
@@ -36,37 +33,57 @@ export class PazaryeriProductService {
     private readonly trendyolService: TrendyolService,
   ) {}
 
-  findAll(userId: number) {
-    return this.pazaryeriProductRepository.find({
-      where: { product: { userId } },
-      relations: { product: true, entegreKanal: true, variants: true },
-      order: { id: 'DESC' },
-    });
+  private withProductDetail(entity: PazaryeriProductTrendyol) {
+    return {
+      ...entity,
+      productDetail: null,
+      variants: Array.isArray(entity.variants) ? entity.variants : [],
+    };
   }
 
-  async findOne(id: number, userId: number) {
+  private async findOneEntity(id: number, userId: number) {
     const entity = await this.pazaryeriProductRepository.findOne({
-      where: { id, product: { userId } },
-      relations: { product: true, entegreKanal: true, variants: true },
+      where: { id, userId },
+      relations: { entegreKanal: true, variants: true },
     });
 
     if (!entity) {
-      throw new NotFoundException(`PazaryeriProduct with id ${id} not found`);
+      throw new NotFoundException(`PazaryeriProductTrendyol with id ${id} not found`);
     }
 
     return entity;
   }
 
-  async create(dto: CreatePazaryeriProductDto, userId: number) {
-    const product = await this.productRepository.findOne({
-      where: { id: dto.productId, userId },
-      select: { id: true, userId: true },
+  findAll(userId: number) {
+    return this.pazaryeriProductRepository
+      .find({
+        where: { userId },
+        relations: { entegreKanal: true, variants: true },
+        order: { id: 'DESC' },
+      })
+      .then((entities) => entities.map((entity) => this.withProductDetail(entity)));
+  }
+
+  async findOne(id: number, userId: number) {
+    const entity = await this.findOneEntity(id, userId);
+    return this.withProductDetail(entity);
+  }
+
+  async findByProductId(productId: number, userId: number) {
+    const entities = await this.pazaryeriProductRepository.find({
+      where: { productId, userId },
+      relations: { entegreKanal: true, variants: true },
+      order: { id: 'DESC' },
     });
 
-    if (!product) {
-      throw new BadRequestException('Gecersiz productId');
+    if (!entities.length) {
+      throw new NotFoundException(`PazaryeriProductTrendyol for productId ${productId} not found`);
     }
 
+    return entities.map((entity) => this.withProductDetail(entity));
+  }
+
+  async create(dto: CreatePazaryeriProductDto, userId: number) {
     const entegreKanal = dto.entegreKanalId
       ? await this.entegreKanalRepository.findOne({
           where: { id: dto.entegreKanalId },
@@ -80,7 +97,8 @@ export class PazaryeriProductService {
 
     const existing = await this.pazaryeriProductRepository.findOne({
       where: {
-        productId: dto.productId,
+        userId,
+        productId: dto.productId ?? IsNull(),
         entegreKanalId: dto.entegreKanalId ?? IsNull(),
       },
     });
@@ -91,7 +109,8 @@ export class PazaryeriProductService {
 
     const entity = this.pazaryeriProductRepository.create({
       ...dto,
-      productId: product.id,
+      productId: dto.productId ?? null,
+      userId,
       pazaryeriName: dto.pazaryeriName ?? entegreKanal?.name ?? '',
       entegreKanalId: entegreKanal?.id ?? null,
     });
@@ -100,19 +119,8 @@ export class PazaryeriProductService {
   }
 
   async update(id: number, dto: UpdatePazaryeriProductDto, userId: number) {
-    const entity = await this.findOne(id, userId);
+    const entity = await this.findOneEntity(id, userId);
     const { variants, ...productDto } = dto;
-
-    if (dto.productId !== undefined && dto.productId !== entity.productId) {
-      const product = await this.productRepository.findOne({
-        where: { id: dto.productId, userId },
-        select: { id: true, userId: true },
-      });
-
-      if (!product) {
-        throw new BadRequestException('Gecersiz productId');
-      }
-    }
 
     const nextProductId = dto.productId ?? entity.productId;
     const nextEntegreKanalId =
@@ -122,19 +130,10 @@ export class PazaryeriProductService {
       (dto.productId !== undefined && dto.productId !== entity.productId) ||
       dto.entegreKanalId !== undefined
     ) {
-      const duplicate = await this.pazaryeriProductRepository.findOne({
-        where: {
-          id: id as never,
-        },
-      });
-
-      if (duplicate) {
-        void duplicate;
-      }
-
       const existing = await this.pazaryeriProductRepository.findOne({
         where: {
-          productId: nextProductId,
+          userId,
+          productId: nextProductId ?? IsNull(),
           entegreKanalId: nextEntegreKanalId ?? IsNull(),
         },
       });
@@ -166,6 +165,13 @@ export class PazaryeriProductService {
       }
     }
 
+    if (typeof productDto.pazaryeriName === 'string') {
+      const trimmedName = productDto.pazaryeriName.trim();
+      productDto.pazaryeriName = trimmedName || entity.pazaryeriName;
+    }
+
+    Object.assign(entity, productDto);
+
     if (variants !== undefined) {
       await this.syncTrendyolVariants(entity, variants, userId);
       const savedVariants = await this.updateVariants(entity, variants);
@@ -180,12 +186,14 @@ export class PazaryeriProductService {
       }
     }
 
-    Object.assign(entity, productDto);
+    if (entity.userId === null || entity.userId === undefined) {
+      entity.userId = userId;
+    }
     return this.pazaryeriProductRepository.save(entity);
   }
 
   private async updateVariants(
-    entity: PazaryeriProduct,
+    entity: PazaryeriProductTrendyol,
     variants: NonNullable<UpdatePazaryeriProductDto['variants']>,
   ) {
     if (!variants.length) {
@@ -199,7 +207,7 @@ export class PazaryeriProductService {
         .map((variant) => [variant.barcode as string, variant]),
     );
 
-    const touched: PazaryeriProductVariant[] = [];
+    const touched: PazaryeriProductTrendyolVariant[] = [];
 
     for (const item of variants) {
       const variant = this.resolveVariantEntity(variantMap, barcodeMap, item.id, item.barcode);
@@ -219,6 +227,12 @@ export class PazaryeriProductService {
       if (item.vatRate !== undefined) {
         variant.vatRate = item.vatRate;
       }
+      if (item.title !== undefined) {
+        variant.title = item.title;
+      }
+      if (item.onSale !== undefined) {
+        variant.onSale = item.onSale;
+      }
 
       touched.push(variant);
     }
@@ -232,7 +246,7 @@ export class PazaryeriProductService {
   }
 
   private async syncTrendyolVariants(
-    entity: PazaryeriProduct,
+    entity: PazaryeriProductTrendyol,
     variants: NonNullable<UpdatePazaryeriProductDto['variants']>,
     userId: number,
   ): Promise<void> {
@@ -273,10 +287,6 @@ export class PazaryeriProductService {
         .map((variant) => [variant.barcode as string, variant]),
     );
 
-    const productImages = (entity.product?.images ?? []).filter((url): url is string =>
-      Boolean(url),
-    );
-
     const contentItems: TrendyolProductContentUpdateItem[] = [];
 
     const items: TrendyolInventoryPriceUpdateItem[] = variants.map((item) => {
@@ -309,18 +319,11 @@ export class PazaryeriProductService {
           contentId: resolvedContentId,
         };
 
-        const title = variant.title ?? entity.product?.name;
-        const description = entity.product?.content;
-        const vatRate = item.vatRate ?? variant.vatRate ?? entity.product?.kdv;
+        const title = item.title ?? variant.title ?? entity.pazaryeriName;
+        const vatRate = item.vatRate ?? variant.vatRate;
 
         if (title) {
           contentPayload.title = title;
-        }
-        if (description) {
-          contentPayload.description = description;
-        }
-        if (productImages.length) {
-          contentPayload.images = productImages.map((url) => ({ url }));
         }
         if (vatRate !== null && vatRate !== undefined) {
           contentPayload.vatRate = vatRate;
@@ -343,11 +346,11 @@ export class PazaryeriProductService {
   }
 
   private resolveVariantEntity(
-    variantMap: Map<number, PazaryeriProductVariant>,
-    barcodeMap: Map<string, PazaryeriProductVariant>,
+    variantMap: Map<number, PazaryeriProductTrendyolVariant>,
+    barcodeMap: Map<string, PazaryeriProductTrendyolVariant>,
     variantId?: number,
     barcode?: string,
-  ): PazaryeriProductVariant {
+  ): PazaryeriProductTrendyolVariant {
     const byId = variantId ? variantMap.get(variantId) : undefined;
     if (byId) {
       return byId;
@@ -385,7 +388,38 @@ export class PazaryeriProductService {
   }
 
   async remove(id: number, userId: number) {
-    const entity = await this.findOne(id, userId);
+    const entity = await this.findOneEntity(id, userId);
     return this.pazaryeriProductRepository.remove(entity);
+  }
+
+  async tableDelete(userId: number, ids: string[]) {
+    const normalizedIds = Array.from(
+      new Set(
+        ids
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id) && id > 0),
+      ),
+    );
+
+    if (!normalizedIds.length) {
+      return { deletedCount: 0, deletedIds: [] };
+    }
+
+    const deletedIds: number[] = [];
+
+    await this.pazaryeriProductRepository.manager.transaction(async (manager) => {
+      for (const id of normalizedIds) {
+        const result = await manager.delete(PazaryeriProductTrendyol, { id, userId });
+
+        if ((result.affected ?? 0) > 0) {
+          deletedIds.push(id);
+        }
+      }
+    });
+
+    return {
+      deletedCount: deletedIds.length,
+      deletedIds,
+    };
   }
 }

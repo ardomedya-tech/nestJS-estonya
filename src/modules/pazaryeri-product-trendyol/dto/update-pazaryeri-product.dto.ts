@@ -1,7 +1,16 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreatePazaryeriProductDto } from './create-pazaryeri-product.dto';
 import { Type } from 'class-transformer';
-import { IsArray, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import {
+	IsArray,
+	IsBoolean,
+	IsInt,
+	IsNumber,
+	IsOptional,
+	IsString,
+	Min,
+	ValidateNested,
+} from 'class-validator';
 
 class UpdatePazaryeriProductVariantInputDto {
 	@IsOptional()
@@ -13,6 +22,15 @@ class UpdatePazaryeriProductVariantInputDto {
 	@IsOptional()
 	@IsString()
 	barcode?: string;
+
+	@IsOptional()
+	@IsString()
+	title?: string;
+
+	@IsOptional()
+	@Type(() => Boolean)
+	@IsBoolean()
+	onSale?: boolean;
 
 	@IsOptional()
 	@Type(() => Number)

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseArrayPipe,
   ParseIntPipe,
   Post,
   Put,
@@ -16,16 +17,24 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { User } from '../user/user.entity';
 import { CreatePazaryeriProductDto } from './dto/create-pazaryeri-product.dto';
 import { UpdatePazaryeriProductDto } from './dto/update-pazaryeri-product.dto';
-import { PazaryeriProductService } from './pazaryeri-product.service';
+import { PazaryeriProductTrendyolService } from './pazaryeri-product-trendyol.service';
 
 @UseGuards(AuthGuard)
-@Controller('pazaryeri-product')
-export class PazaryeriProductController {
-  constructor(private readonly pazaryeriProductService: PazaryeriProductService) {}
+@Controller('pazaryeri-product-trendyol')
+export class PazaryeriProductTrendyolController {
+  constructor(private readonly pazaryeriProductService: PazaryeriProductTrendyolService) {}
 
   @Get()
   findAll(@Req() request: Request & { user: User }) {
     return this.pazaryeriProductService.findAll(request.user.id);
+  }
+
+  @Get('product/:productId')
+  findByProductId(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Req() request: Request & { user: User },
+  ) {
+    return this.pazaryeriProductService.findByProductId(productId, request.user.id);
   }
 
   @Get(':id')
@@ -65,6 +74,19 @@ export class PazaryeriProductController {
     dto: UpdatePazaryeriProductDto,
   ) {
     return this.pazaryeriProductService.update(id, dto, request.user.id);
+  }
+
+  @Delete('table-delete')
+  tableDelete(
+    @Req() request: Request & { user: User },
+    @Body(
+      new ParseArrayPipe({
+        items: String,
+      }),
+    )
+    ids: string[],
+  ) {
+    return this.pazaryeriProductService.tableDelete(request.user.id, ids);
   }
 
   @Delete(':id')

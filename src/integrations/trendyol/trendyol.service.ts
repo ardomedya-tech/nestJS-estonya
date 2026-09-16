@@ -150,7 +150,7 @@ export class TrendyolService {
     ).toString();
     return this.requestWithFallback(
       (baseUrl) =>
-        `${baseUrl}/product/sellers/${creds.sellerId}/orders${query ? `?${query}` : ''}`,
+        `${baseUrl}/order/sellers/${creds.sellerId}/orders${query ? `?${query}` : ''}`,
       creds,
     );
   }

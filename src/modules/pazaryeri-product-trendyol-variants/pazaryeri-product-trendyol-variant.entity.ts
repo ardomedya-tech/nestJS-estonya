@@ -7,22 +7,22 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { PazaryeriProduct } from '../pazaryeri-product/pazaryeri-product.entity';
+import { PazaryeriProductTrendyol } from '../pazaryeri-product-trendyol/pazaryeri-product-trendyol.entity';
 
-@Entity('PazaryeriProductVariant')
-export class PazaryeriProductVariant {
+@Entity('PazaryeriProductTrendyolVariant')
+export class PazaryeriProductTrendyolVariant {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column({ type: 'int' })
   pazaryeriProductId!: number;
 
-  @ManyToOne(() => PazaryeriProduct, (pazaryeriProduct) => pazaryeriProduct.variants, {
+  @ManyToOne(() => PazaryeriProductTrendyol, (pazaryeriProduct) => pazaryeriProduct.variants, {
     nullable: false,
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'pazaryeriProductId' })
-  pazaryeriProduct!: PazaryeriProduct;
+  pazaryeriProduct!: PazaryeriProductTrendyol;
 
   @Column({ type: 'varchar', nullable: true })
   variantId!: string | null;

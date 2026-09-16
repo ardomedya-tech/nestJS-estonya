@@ -4,7 +4,6 @@ import {
   IsDateString,
   IsOptional,
   IsString,
-  IsObject,
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -23,8 +22,6 @@ function parseBooleanFromRaw(value: unknown): unknown {
   }
   return value;
 }
-
-
 
 export class CreateOrderDto {
   @IsArray()

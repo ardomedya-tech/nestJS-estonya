@@ -81,7 +81,7 @@ export class ProductService {
 	findAll(userId: number) {
 		return this.productRepository.find({
 			where: { userId },
-			relations: { user: true, pazaryeriProducts: { entegreKanal: true, variants: true } },
+			relations: { user: true },
 			order: { id: 'DESC' },
 		});
 	}
@@ -102,7 +102,7 @@ export class ProductService {
 	async findOne(id: number) {
 		const product = await this.productRepository.findOne({
 			where: { id },
-			relations: { user: true, pazaryeriProducts: { entegreKanal: true, variants: true } },
+			relations: { user: true },
 		});
 
 		if (!product) {
